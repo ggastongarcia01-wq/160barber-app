@@ -1,0 +1,456 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>160Barber · Sistema de Fidelidad</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --gold: #c6a45b;
+      --gold-dark: #ab8942;
+      --bg: #111111;
+      --panel: #1b1b1b;
+      --muted: #aaa;
+    }
+    body {
+      background-color: #0d0d0d;
+      color: #e5e5e5;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    }
+    .gold-text {
+      color: var(--gold);
+    }
+    .gold-bg {
+      background-color: var(--gold);
+    }
+    .gold-border {
+      border-color: var(--gold);
+    }
+    .stamp {
+      aspect-ratio: 1;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: #2a2a2a;
+      color: #777;
+      font-weight: 700;
+      border: 1px solid #3a3a3a;
+      transition: all 0.2s ease;
+    }
+    .stamp.done {
+      background: var(--gold);
+      color: #111;
+      border-color: #e4c77f;
+      box-shadow: 0 0 10px rgba(198, 164, 91, 0.4);
+    }
+    /* Estilos para diálogos y modal */
+    .modal-backdrop {
+      background-color: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(4px);
+    }
+  </style>
+</head>
+<body class="py-6 px-4">
+  <main class="max-w-2xl mx-auto space-y-6">
+
+    <!-- HERO / BANNER PRINCIPAL -->
+    <section class="bg-[#181818] text-white p-6 rounded-2xl border border-zinc-800 shadow-xl">
+      <div class="flex items-center justify-between mb-2">
+        <div class="brand text-2xl font-black tracking-widest text-[#e4c77f] flex items-center gap-2">
+          <i class="fa-solid fa-scissors"></i> 160BARBER
+        </div>
+        <span class="text-xs font-semibold uppercase bg-zinc-800 text-amber-400 px-3 py-1 rounded-full border border-amber-500/20">Fidelidad</span>
+      </div>
+      <h1 class="text-xl font-bold mb-1">Sistema de Tarjeta Digital</h1>
+      <p class="text-zinc-400 text-sm mb-6">10 cortes aprobados = 1 corte gratis</p>
+      
+      <!-- ESTADÍSTICAS DEL NEGOCIO -->
+      <div class="grid grid-cols-3 gap-3 bg-[#111] p-4 rounded-xl border border-zinc-800/80 text-center">
+        <div>
+          <span class="text-xs text-zinc-500 block uppercase font-medium">Clientes</span>
+          <h2 id="count" class="text-2xl font-extrabold text-amber-400">0</h2>
+        </div>
+        <div>
+          <span class="text-xs text-zinc-500 block uppercase font-medium">Cortes</span>
+          <h2 id="cuts" class="text-2xl font-extrabold text-white">0</h2>
+        </div>
+        <div>
+          <span class="text-xs text-zinc-500 block uppercase font-medium">Premios</span>
+          <h2 id="rewards" class="text-2xl font-extrabold text-emerald-400">0</h2>
+        </div>
+      </div>
+    </section>
+
+    <!-- NAVEGACIÓN POR PESTAÑAS -->
+    <div class="flex gap-2 p-1 bg-[#181818] rounded-xl border border-zinc-800">
+      <button class="tab-btn active flex-1 py-2.5 px-3 rounded-lg font-bold text-sm transition-all duration-200 bg-[#c6a45b] text-zinc-950 shadow" data-tab="customers">
+        <i class="fa-solid fa-users mr-1"></i> Clientes
+      </button>
+      <button class="tab-btn flex-1 py-2.5 px-3 rounded-lg font-bold text-sm transition-all duration-200 text-zinc-400 hover:text-white" data-tab="register">
+        <i class="fa-solid fa-check-circle mr-1"></i> Registrar
+      </button>
+      <button class="tab-btn flex-1 py-2.5 px-3 rounded-lg font-bold text-sm transition-all duration-200 text-zinc-400 hover:text-white" data-tab="qr">
+        <i class="fa-solid fa-qrcode mr-1"></i> QR Demo
+      </button>
+    </div>
+
+    <!-- SECCIÓN: CLIENTES -->
+    <section id="customers" class="panel bg-[#181818] p-5 rounded-2xl border border-zinc-800 shadow-lg space-y-4">
+      <div class="flex items-center justify-between">
+        <h2 class="text-lg font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-address-book text-amber-400"></i> Lista de Clientes
+        </h2>
+        <span class="text-xs text-zinc-500">Gestión rápida</span>
+      </div>
+
+      <!-- Buscador -->
+      <div class="relative">
+        <i class="fa-solid fa-magnifying-glass absolute left-3 top-3.5 text-zinc-500 text-sm"></i>
+        <input id="search" type="text" placeholder="Buscar cliente por nombre..." class="w-full bg-[#111] text-white pl-9 pr-4 py-2.5 rounded-xl border border-zinc-700 focus:outline-none focus:border-amber-400 text-sm">
+      </div>
+
+      <!-- Listado de clientes con botón de eliminar fácil -->
+      <div id="list" class="divide-y divide-zinc-800/60 max-h-80 overflow-y-auto pr-1"></div>
+
+      <!-- Formulario para agregar cliente -->
+      <div class="pt-4 border-t border-zinc-800">
+        <h3 class="text-sm font-semibold text-zinc-300 mb-2">Agregar nuevo cliente</h3>
+        <div class="flex gap-2">
+          <input id="newName" type="text" placeholder="Nombre completo" class="flex-1 bg-[#111] text-white px-3 py-2.5 rounded-xl border border-zinc-700 focus:outline-none focus:border-amber-400 text-sm">
+          <button id="add" class="bg-[#c6a45b] hover:bg-[#ab8942] text-zinc-950 font-bold px-4 py-2.5 rounded-xl text-sm transition-all flex items-center gap-1 shrink-0">
+            <i class="fa-solid fa-user-plus"></i> Agregar
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECCIÓN: REGISTRAR CORTE -->
+    <section id="register" class="panel hidden bg-[#181818] p-5 rounded-2xl border border-zinc-800 shadow-lg space-y-4">
+      <h2 class="text-lg font-bold text-white flex items-center gap-2">
+        <i class="fa-solid fa-scissors text-amber-400"></i> Confirmar Corte
+      </h2>
+      <p class="text-xs text-zinc-400">Seleccioná al cliente para cargar un sello o validar un premio acumulado.</p>
+      
+      <div>
+        <label class="block text-xs font-semibold text-zinc-400 mb-1">Cliente</label>
+        <select id="customerSelect" class="w-full bg-[#111] text-white p-3 rounded-xl border border-zinc-700 focus:outline-none focus:border-amber-400 text-sm"></select>
+      </div>
+
+      <!-- Tarjeta Interactiva de Sellos -->
+      <div id="card" class="bg-[#111] p-4 rounded-xl border border-zinc-800 text-center space-y-4"></div>
+    </section>
+
+    <!-- SECCIÓN: QR DEMO -->
+    <section id="qr" class="panel hidden bg-[#181818] p-5 rounded-2xl border border-zinc-800 shadow-lg space-y-4">
+      <h2 class="text-lg font-bold text-white flex items-center gap-2">
+        <i class="fa-solid fa-qrcode text-amber-400"></i> QR de Demostración
+      </h2>
+      <div class="bg-white p-6 rounded-2xl w-48 h-48 mx-auto flex items-center justify-center text-zinc-900 shadow-inner">
+        <i class="fa-solid fa-qrcode text-9xl"></i>
+      </div>
+      <p class="text-xs text-center text-zinc-400">El QR real permitirá que cada cliente consulte su tarjeta digital desde su celular.</p>
+      <div class="bg-amber-500/10 border border-amber-500/30 p-3 rounded-xl text-amber-300 text-xs flex items-start gap-2">
+        <i class="fa-solid fa-circle-info text-sm mt-0.5 shrink-0"></i>
+        <span>Este símbolo es ilustrativo. Para operar en múltiples teléfonos se debe conectar a una base de datos en la nube.</span>
+      </div>
+    </section>
+
+    <!-- NUEVA SECCIÓN DE HORARIOS Y MODALIDAD DE ATENCIÓN DE 160BARBER -->
+    <section class="bg-[#181818] p-6 rounded-2xl border border-zinc-800 shadow-xl space-y-5">
+      <div class="text-center space-y-1">
+        <p class="text-xs font-semibold tracking-widest text-amber-400 uppercase">Información General</p>
+        <h2 class="text-xl font-black text-white uppercase tracking-tight">¡Nuestros horarios y modalidad de atención!</h2>
+      </div>
+
+      <!-- TARJETA HORARIO DE LUNES A LUNES -->
+      <div class="bg-gradient-to-r from-zinc-900 via-zinc-800 to-zinc-900 p-4 rounded-xl border border-amber-500/30 text-center shadow-md">
+        <div class="text-lg font-black text-white tracking-wide">160BARBER</div>
+        <p class="text-xs text-zinc-400 font-medium uppercase mb-2">Atención y Horarios</p>
+        <div class="inline-block bg-[#111] px-6 py-2 rounded-lg border border-zinc-700">
+          <span class="block text-amber-400 font-black text-base tracking-wider">LUNES A LUNES</span>
+          <span class="text-white font-bold text-lg">10:00 a 19:30 hs</span>
+        </div>
+      </div>
+
+      <!-- MODALIDADES DE ATENCIÓN EN PARALELO -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <!-- Lunes a Sábados -->
+        <div class="bg-[#111] p-4 rounded-xl border border-zinc-800 flex items-center gap-3">
+          <div class="w-10 h-10 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
+            <i class="fa-solid fa-users-line text-lg"></i>
+          </div>
+          <div>
+            <h4 class="text-xs font-bold text-zinc-400 uppercase">Lunes a Sábados</h4>
+            <p class="text-sm font-extrabold text-white">ATENCIÓN POR ORDEN DE LLEGADA</p>
+          </div>
+        </div>
+
+        <!-- Domingos -->
+        <div class="bg-[#111] p-4 rounded-xl border border-zinc-800 flex items-center gap-3">
+          <div class="w-10 h-10 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
+            <i class="fa-regular fa-calendar-check text-lg"></i>
+          </div>
+          <div>
+            <h4 class="text-xs font-bold text-zinc-400 uppercase">Domingos</h4>
+            <p class="text-sm font-extrabold text-amber-400">ÚNICAMENTE CON TURNO PREVIO</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- LLAMADO A LA ACCIÓN WHATSAPP -->
+      <div class="bg-emerald-950/40 border border-emerald-500/30 p-4 rounded-xl text-center space-y-2">
+        <p class="text-xs text-zinc-300 font-medium">Reservá tu turno para el domingo mandando un mensaje al WhatsApp:</p>
+        <a href="https://wa.me/541157106429" target="_blank" class="inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-black px-5 py-2.5 rounded-xl text-lg transition-all shadow-lg hover:shadow-emerald-600/30">
+          <i class="fa-brands fa-whatsapp text-xl"></i> 11-5710-6429
+        </a>
+        <p class="text-xs text-emerald-400 font-bold tracking-wider uppercase">¡Te esperamos!</p>
+      </div>
+    </section>
+
+    <!-- NOTA DE ADVERTENCIA / FOOTER TÉCNICO -->
+    <section class="bg-[#181818]/60 p-4 rounded-xl border border-zinc-800 text-zinc-500 text-xs space-y-1">
+      <p><strong class="text-zinc-400">Prototipo local (160Barber):</strong> Los datos se guardan únicamente en el almacenamiento del navegador actual (localStorage).</p>
+    </section>
+
+  </main>
+
+  <!-- MODAL DE CONFIRMACIÓN DE ELIMINACIÓN -->
+  <div id="deleteModal" class="fixed inset-0 modal-backdrop hidden flex items-center justify-center p-4 z-50">
+    <div class="bg-[#181818] border border-zinc-800 rounded-2xl p-6 max-w-sm w-full space-y-4 shadow-2xl">
+      <div class="text-center space-y-2">
+        <div class="w-12 h-12 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mx-auto text-xl border border-red-500/20">
+          <i class="fa-solid fa-user-xmark"></i>
+        </div>
+        <h3 class="text-lg font-bold text-white">¿Eliminar cliente?</h3>
+        <p id="deleteCustomerName" class="text-sm text-zinc-400 font-medium"></p>
+        <p class="text-xs text-zinc-500">Esta acción no se puede deshacer y se borrarán sus sellos y premios registrados.</p>
+      </div>
+      <div class="flex gap-2 pt-2">
+        <button id="cancelDeleteBtn" class="flex-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold py-2.5 rounded-xl text-sm transition-all">Cancelar</button>
+        <button id="confirmDeleteBtn" class="flex-1 bg-red-600 hover:bg-red-500 text-white font-bold py-2.5 rounded-xl text-sm transition-all">Eliminar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Clave para almacenamiento en localStorage
+    const KEY = 'barber-160-v1';
+
+    // Datos por defecto si la base de datos está vacía
+    const defaultData = [
+      { id: 1, name: 'Lucas González', cuts: 4, rewards: 0 },
+      { id: 2, name: 'Mariano Silva', cuts: 10, rewards: 1 },
+      { id: 3, name: 'Carlos Benítez', cuts: 8, rewards: 0 }
+    ];
+
+    let people = JSON.parse(localStorage.getItem(KEY)) || defaultData;
+    let selected = people[0]?.id || null;
+    let customerToDeleteId = null;
+
+    const $ = id => document.getElementById(id);
+
+    function save() {
+      localStorage.setItem(KEY, JSON.stringify(people));
+      render();
+    }
+
+    function totals() {
+      $('count').textContent = people.length;
+      $('cuts').textContent = people.reduce((a, p) => a + p.cuts, 0);
+      $('rewards').textContent = people.reduce((a, p) => a + p.rewards, 0);
+    }
+
+    function esc(s) {
+      return s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
+    function render() {
+      totals();
+      const q = $('search').value.toLowerCase().trim();
+      const filtered = people.filter(p => p.name.toLowerCase().includes(q));
+
+      if (filtered.length === 0) {
+        $('list').innerHTML = '<p class="text-zinc-500 text-xs py-4 text-center">No se encontraron clientes.</p>';
+      } else {
+        $('list').innerHTML = filtered.map(p => `
+          <div class="py-3 flex items-center justify-between gap-2">
+            <div class="min-w-0 flex-1">
+              <p class="font-bold text-white text-sm truncate">${esc(p.name)}</p>
+              <p class="text-xs text-zinc-400">${p.cuts}/10 cortes acumulados · <span class="${p.rewards ? 'text-emerald-400 font-bold' : ''}">${p.rewards} premio(s)</span></p>
+            </div>
+            <div class="flex items-center gap-1.5 shrink-0">
+              <button data-select="${p.id}" class="bg-zinc-800 hover:bg-zinc-700 text-amber-400 font-semibold px-3 py-1.5 rounded-lg text-xs transition-all flex items-center gap-1">
+                <i class="fa-solid fa-eye"></i> Ver
+              </button>
+              <button data-delete="${p.id}" title="Eliminar cliente" class="bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 border border-red-500/20 px-2.5 py-1.5 rounded-lg text-xs transition-all">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      // Actualizar select de clientes
+      if (people.length > 0) {
+        $('customerSelect').innerHTML = people.map(p => `
+          <option value="${p.id}" ${p.id === selected ? 'selected' : ''}>${esc(p.name)} (${p.cuts}/10 cortes)</option>
+        `).join('');
+      } else {
+        $('customerSelect').innerHTML = '<option value="">Sin clientes registrados</option>';
+      }
+
+      renderCard();
+    }
+
+    function renderCard() {
+      const selectedId = Number($('customerSelect').value) || selected;
+      const p = people.find(p => p.id === selectedId) || people[0];
+
+      if (!p) {
+        $('card').innerHTML = '<p class="text-zinc-500 text-sm py-4">Agregá un cliente para ver su tarjeta de fidelidad.</p>';
+        return;
+      }
+
+      selected = p.id;
+      
+      const stampsHtml = Array.from({ length: 10 }, (_, i) => `
+        <div class="stamp ${i < p.cuts ? 'done' : ''}">
+          ${i < p.cuts ? '<i class="fa-solid fa-check text-sm"></i>' : (i + 1)}
+        </div>
+      `).join('');
+
+      $('card').innerHTML = `
+        <div class="flex justify-between items-center border-b border-zinc-800 pb-3">
+          <div class="text-left">
+            <h3 class="font-black text-lg text-white">${esc(p.name)}</h3>
+            <p class="text-xs text-zinc-400">Progreso actual</p>
+          </div>
+          <span class="text-xl font-black text-amber-400 bg-amber-500/10 px-3 py-1 rounded-xl border border-amber-500/20">${p.cuts}/10</span>
+        </div>
+
+        <div class="grid grid-cols-5 gap-2 my-2">${stampsHtml}</div>
+
+        ${p.rewards ? `
+          <div class="bg-emerald-500/10 border border-emerald-500/30 p-3 rounded-xl text-center space-y-2">
+            <p class="text-emerald-400 font-bold text-xs flex items-center justify-center gap-1">
+              <i class="fa-solid fa-gift"></i> ¡Premio disponible: Corte gratis (${p.rewards})!
+            </p>
+            <button id="redeem" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-2 px-4 rounded-xl text-sm transition-all shadow-md">
+              Confirmar Canje de Corte Gratis
+            </button>
+          </div>
+        ` : p.cuts >= 10 ? `
+          <div class="bg-emerald-500/10 border border-emerald-500/30 p-3 rounded-xl">
+            <p class="text-emerald-400 font-bold text-xs">Meta de 10 cortes completada. Generando premio...</p>
+          </div>
+        ` : `
+          <button id="confirm" class="w-full bg-[#c6a45b] hover:bg-[#ab8942] text-zinc-950 font-black py-2.5 px-4 rounded-xl text-sm transition-all shadow-md flex items-center justify-center gap-2">
+            <i class="fa-solid fa-plus"></i> Registrar Nuevo Corte (+1 Sello)
+          </button>
+        `}
+      `;
+
+      if ($('confirm')) {
+        $('confirm').onclick = () => {
+          p.cuts++;
+          if (p.cuts >= 10) {
+            p.rewards++;
+            p.cuts = 0;
+          }
+          save();
+        };
+      }
+
+      if ($('redeem')) {
+        $('redeem').onclick = () => {
+          if (p.rewards > 0) {
+            p.rewards--;
+            save();
+          }
+        };
+      }
+    }
+
+    // Pestañas
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.onclick = () => {
+        document.querySelectorAll('.tab-btn').forEach(x => {
+          x.classList.remove('active', 'bg-[#c6a45b]', 'text-zinc-950', 'shadow');
+          x.classList.add('text-zinc-400');
+        });
+        btn.classList.add('active', 'bg-[#c6a45b]', 'text-zinc-950', 'shadow');
+        btn.classList.remove('text-zinc-400');
+
+        ['customers', 'register', 'qr'].forEach(id => {
+          $(id).classList.toggle('hidden', id !== btn.dataset.tab);
+        });
+        render();
+      };
+    });
+
+    // Delegación de eventos en la lista de clientes (Ver y Eliminar)
+    $('list').onclick = e => {
+      // Ver cliente
+      const selectBtn = e.target.closest('[data-select]');
+      if (selectBtn) {
+        selected = Number(selectBtn.dataset.select);
+        $('customerSelect').value = selected;
+        document.querySelector('[data-tab="register"]').click();
+        renderCard();
+        return;
+      }
+
+      // Eliminar cliente
+      const deleteBtn = e.target.closest('[data-delete]');
+      if (deleteBtn) {
+        const idToDelete = Number(deleteBtn.dataset.delete);
+        const customer = people.find(p => p.id === idToDelete);
+        if (customer) {
+          customerToDeleteId = idToDelete;
+          $('deleteCustomerName').textContent = customer.name;
+          $('deleteModal').classList.remove('hidden');
+        }
+      }
+    };
+
+    // Modal de eliminación
+    $('cancelDeleteBtn').onclick = () => {
+      customerToDeleteId = null;
+      $('deleteModal').classList.add('hidden');
+    };
+
+    $('confirmDeleteBtn').onclick = () => {
+      if (customerToDeleteId !== null) {
+        people = people.filter(p => p.id !== customerToDeleteId);
+        if (selected === customerToDeleteId) {
+          selected = people[0]?.id || null;
+        }
+        customerToDeleteId = null;
+        $('deleteModal').classList.add('hidden');
+        save();
+      }
+    };
+
+    // Eventos de busqueda y controles
+    $('search').oninput = render;
+    $('customerSelect').onchange = renderCard;
+
+    // Agregar cliente
+    $('add').onclick = () => {
+      const name = $('newName').value.trim();
+      if (!name) return;
+      
+      const id = people.length ? Math.max(...people.map(p => p.id)) + 1 : 1;
+      people.push({ id, name, cuts: 0, rewards: 0 });
+      selected = id;
+      $('newName').value = '';
+      save();
+    };
+
+    // Render inicial
+    render();
+  </script>
+</body>
+</html>
