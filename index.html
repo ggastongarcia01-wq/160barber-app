@@ -3,15 +3,212 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>160Barber · Sistema de Fidelidad</title>
+<!-- Librería para generar el código QR real -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
-:root{--gold:#c6a45b;--bg:#111;--panel:#1b1b1b;--muted:#aaa;--danger:#dc3545}*{box-sizing:border-box}body{margin:0;background:#f2f2f2;color:#171717;font:16px system-ui,-apple-system,Segoe UI,sans-serif}.wrap{max-width:760px;margin:0 auto;padding:18px}.hero{background:var(--bg);color:#fff;padding:24px;border-radius:20px}.brand{color:#e4c77f;font-size:22px;font-weight:800;letter-spacing:2px}.muted{color:var(--muted)}.tabs{display:flex;gap:8px;margin:16px 0}.tabs button,button{border:0;border-radius:10px;padding:12px 15px;font-weight:700;cursor:pointer}.tabs button{background:#ddd;flex:1}.tabs button.active,button.primary{background:var(--gold);color:#171717}.btn-danger{background:var(--danger);color:#fff}.panel{background:white;padding:18px;border-radius:16px;margin-top:14px;box-shadow:0 4px 18px #0000000c}input,select{width:100%;padding:12px;border:1px solid #ccc;border-radius:10px;margin:7px 0 12px;font:inherit}.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:9px;margin:18px 0}.stamp{aspect-ratio:1;border-radius:50%;display:grid;place-items:center;background:#e8e8e8;color:#555;font-weight:700}.stamp.done{background:var(--gold);color:#111}.row{display:flex;justify-content:space-between;align-items:center;gap:10px}.hidden{display:none}.note{font-size:13px;color:#666;line-height:1.5}.client{padding:12px 0;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center;gap:10px}.client-actions{display:flex;gap:6px}.qr{font-size:80px;text-align:center}.success{color:#237a44;font-weight:700}
-</style></head>
-<body><main class="wrap">
-<section class="hero"><div class="brand">✂ 160BARBER</div><h1>Sistema de fidelidad</h1><p class="muted">10 cortes aprobados = 1 corte gratis</p><div class="row"><div><small class="muted">Clientes registrados</small><h2 id="count">0</h2></div><div><small class="muted">Cortes acumulados</h><h2 id="cuts">0</h2></div><div><small class="muted">Premios pendientes</small><h2 id="rewards">0</h2></div></div></section>
-<div class="tabs"><button class="active" data-tab="customers">Clientes</button><button data-tab="register">Registrar corte</button><button data-tab="qr">QR</button></div>
-<section id="customers" class="panel"><h2>Clientes</h2><input id="search" placeholder="Buscar cliente…"><div id="list"></div><h3>Agregar nuevo cliente</h3><input id="newName" placeholder="Nombre y apellido"><button class="primary" id="add">Agregar cliente</button></section>
-<section id="register" class="panel hidden"><h2>Confirmar corte</h2><p class="note">Elegí al cliente y confirmá solamente después de realizar el corte.</p><label>Cliente</label><select id="customerSelect"></select><div id="card"></div></section>
-<section id="qr" class="panel hidden"><h2>QR del sistema</h2><div class="qr">▦</div><p>Escaneá este código para acceder rápidamente a la tarjeta de fidelidad del cliente.</p></section>
-</main><script>
-const KEY='160barber-data-v1';let people=JSON.parse(localStorage.getItem(KEY)||'null')||[];let selected=people[0]?.id;const $=id=>document.getElementById(id);function save(){localStorage.setItem(KEY,JSON.stringify(people));render()}function totals(){$('count').textContent=people.length;$('cuts').textContent=people.reduce((a,p)=>a+p.cuts,0);$('rewards').textContent=people.reduce((a,p)=>a+p.rewards,0)}function render(){totals();const q=$('search').value.toLowerCase();$('list').innerHTML=people.filter(p=>p.name.toLowerCase().includes(q)).map(p=>`<div class="client"><div><b>${esc(p.name)}</b><br><small>${p.cuts}/10 cortes · ${p.rewards} premio(s)</small></div><div class="client-actions"><button data-select="${p.id}">Ver</button><button class="btn-danger" data-delete="${p.id}">Eliminar</button></div></div>`).join('')||'<p>No hay clientes registrados.</p>';$('customerSelect').innerHTML=people.map(p=>`<option value="${p.id}" ${p.id===selected?'selected':''}>${esc(p.name)}</option>`).join('');renderCard()}function esc(s){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}function renderCard(){const p=people.find(p=>p.id===Number($('customerSelect').value))\vert{}\vert{}people.find(p=>p.id===selected);if(!p){$('card').innerHTML='<p>Agregá un cliente primero.</p>';return}selected=p.id;$('card').innerHTML=`<h3>${esc(p.name)}</h3><h2>${p.cuts}/10 cortes</h2><div class="grid">${Array.from({length:10},(_,i)=>`<div class="stamp ${i<p.cuts?'done':''}">${i<p.cuts?'✓':i+1}</div>`).join('')}</div>${p.rewards?`<p class="success">Premio disponible: corte gratis (${p.rewards})</p><button class="primary" id="redeem">Confirmar canje</button>`:p.cuts>=10?'<p class="success">Meta completada. Premio generado.</p>':'<button class="primary" id="confirm">Confirmar corte realizado</button>'}`;if($('confirm'))$('confirm').onclick=()=>{p.cuts++;if(p.cuts>=10){p.rewards++;p.cuts=0}save()};if($('redeem'))$('redeem').onclick=()=>{if(confirm('¿Confirmar que se entregó el corte gratis?')){p.rewards--;save()}}}document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x===b));['customers','register','qr'].forEach(id=>$(id).classList.toggle('hidden',id!==b.dataset.tab));render()});$('list').onclick=e=>{const selBtn=e.target.closest('[data-select]');const delBtn=e.target.closest('[data-delete]');if(selBtn){selected=Number(selBtn.dataset.select);$('customerSelect').value=selected;document.querySelector('[data-tab="register"]').click();renderCard()}if(delBtn){const id=Number(delBtn.dataset.delete);const p=people.find(x=>x.id===id);if(p&&confirm(`¿Seguro que querés eliminar a ${p.name}?`)){people=people.filter(x=>x.id!==id);if(selected===id){selected=people[0]?.id}save()}}};$('search').oninput=render;$('customerSelect').onchange=renderCard;$('add').onclick=()=>{const name=$('newName').value.trim();if(!name)return alert('Escribí un nombre');const id=Math.max(0,...people.map(p=>p.id))+1;people.push({id,name,cuts:0,rewards:0});selected=id;$('newName').value='';save()};render();
-</script></body></html>
+:root{--gold:#c6a45b;--bg:#111;--panel:#1b1b1b;--muted:#aaa;--danger:#dc3545}
+*{box-sizing:border-box}
+body{margin:0;background:#f2f2f2;color:#171717;font:16px system-ui,-apple-system,Segoe UI,sans-serif}
+.wrap{max-width:760px;margin:0 auto;padding:18px}
+.hero{background:var(--bg);color:#fff;padding:24px;border-radius:20px}
+.brand{color:#e4c77f;font-size:22px;font-weight:800;letter-spacing:2px}
+.muted{color:var(--muted)}
+.tabs{display:flex;gap:8px;margin:16px 0}
+.tabs button,button{border:0;border-radius:10px;padding:12px 15px;font-weight:700;cursor:pointer}
+.tabs button{background:#ddd;flex:1}
+.tabs button.active,button.primary{background:var(--gold);color:#171717}
+.btn-danger{background:var(--danger);color:#fff}
+.panel{background:white;padding:18px;border-radius:16px;margin-top:14px;box-shadow:0 4px 18px #0000000c}
+input,select{width:100%;padding:12px;border:1px solid #ccc;border-radius:10px;margin:7px 0 12px;font:inherit}
+.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:9px;margin:18px 0}
+.stamp{aspect-ratio:1;border-radius:50%;display:grid;place-items:center;background:#e8e8e8;color:#555;font-weight:700}
+.stamp.done{background:var(--gold);color:#111}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.hidden{display:none}
+.note{font-size:13px;color:#666;line-height:1.5}
+.client{padding:12px 0;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.client-actions{display:flex;gap:6px}
+.qr-container{display:flex;justify-content:center;margin:20px 0}
+.success{color:#237a44;font-weight:700}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <section class="hero">
+    <div class="brand">✂ 160BARBER</div>
+    <h1>Sistema de fidelidad</h1>
+    <p class="muted">10 cortes aprobados = 1 corte gratis</p>
+    <div class="row">
+      <div><small class="muted">Clientes registrados</small><h2 id="count">0</h2></div>
+      <div><small class="muted">Cortes acumulados</small><h2 id="cuts">0</h2></div>
+      <div><small class="muted">Premios pendientes</small><h2 id="rewards">0</h2></div>
+    </div>
+  </section>
+
+  <div class="tabs">
+    <button class="active" data-tab="customers">Clientes</button>
+    <button data-tab="register">Registrar corte</button>
+    <button data-tab="qr">QR del negocio</button>
+  </div>
+
+  <section id="customers" class="panel">
+    <h2>Clientes</h2>
+    <input id="search" placeholder="Buscar cliente…">
+    <div id="list"></div>
+    <h3>Agregar nuevo cliente</h3>
+    <input id="newName" placeholder="Nombre y apellido">
+    <button class="primary" id="add">Agregar cliente</button>
+  </section>
+
+  <section id="register" class="panel hidden">
+    <h2>Confirmar corte</h2>
+    <p class="note">Elegí al cliente y confirmá solamente después de realizar el corte.</p>
+    <label>Cliente</label>
+    <select id="customerSelect"></select>
+    <div id="card"></div>
+  </section>
+
+  <section id="qr" class="panel hidden">
+    <h2>QR para tus clientes</h2>
+    <p class="note">Mostrá este código QR a tus clientes para que abran la aplicación en su teléfono.</p>
+    <div class="qr-container" id="qrcode"></div>
+  </section>
+</main>
+
+<script>
+const KEY = '160barber-data-v1';
+let people = JSON.parse(localStorage.getItem(KEY) || 'null') || [];
+let selected = people[0]?.id;
+
+const $ = id => document.getElementById(id);
+
+function save() {
+  localStorage.setItem(KEY, JSON.stringify(people));
+  render();
+}
+
+function totals() {
+  $('count').textContent = people.length;
+  $('cuts').textContent = people.reduce((a, p) => a + p.cuts, 0);$('rewards').textContent = people.reduce((a, p) => a + p.rewards, 0);
+}
+
+function esc(s) {
+  return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function renderCard() {
+  const p = people.find(p => p.id === Number($('customerSelect').value)) || people.find(p => p.id === selected);
+  if (!p) {
+    $('card').innerHTML = '<p>Agregá un cliente primero.</p>';
+    return;
+  }
+  selected = p.id;
+  $('card').innerHTML = `
+    <h3>${esc(p.name)}</h3>
+    <h2>${p.cuts}/10 cortes</h2>
+    <div class="grid">
+      ${Array.from({length: 10}, (_, i) => `<div class="stamp ${i < p.cuts ? 'done' : ''}">${i < p.cuts ? '✓' : i + 1}</div>`).join('')}
+    </div>
+    ${p.rewards ? `<p class="success">Premio disponible: corte gratis (${p.rewards})</p><button class="primary" id="redeem">Confirmar canje</button>` : p.cuts >= 10 ? '<p class="success">Meta completada. Premio generado.</p>' : '<button class="primary" id="confirm">Confirmar corte realizado</button>'}
+  `;
+
+  if ($('confirm')) {$('confirm').onclick = () => {
+      p.cuts++;
+      if (p.cuts >= 10) {
+        p.rewards++;
+        p.cuts = 0;
+      }
+      save();
+    };
+  }
+
+  if ($('redeem')) {$('redeem').onclick = () => {
+      if (confirm('¿Confirmar que se entregó el corte gratis?')) {
+        p.rewards--;
+        save();
+      }
+    };
+  }
+}
+
+function render() {
+  totals();
+  const q = $('search').value.toLowerCase();$('list').innerHTML = people.filter(p => p.name.toLowerCase().includes(q)).map(p => `
+    <div class="client">
+      <div>
+        <b>${esc(p.name)}</b><br>
+        <small>${p.cuts}/10 cortes · ${p.rewards} premio(s)</small>
+      </div>
+      <div class="client-actions">
+        <button data-select="${p.id}">Ver</button>
+        <button class="btn-danger" data-delete="${p.id}">Eliminar</button>
+      </div>
+    </div>
+  `).join('') || '<p>No hay clientes registrados.</p>';
+
+  $('customerSelect').innerHTML = people.map(p => `<option value="${p.id}" ${p.id === selected ? 'selected' : ''}>${esc(p.name)}</option>`).join('');
+  renderCard();
+}
+
+// Control de pestañas
+document.querySelectorAll('[data-tab]').forEach(b => {
+  b.onclick = () => {
+    document.querySelectorAll('[data-tab]').forEach(x => x.classList.toggle('active', x === b));
+    ['customers', 'register', 'qr'].forEach(id => $(id).classList.toggle('hidden', id !== b.dataset.tab));
+    if (b.dataset.tab === 'qr') {
+      generateQR();
+    }
+    render();
+  };
+});
+
+// Eventos de la lista
+$('list').onclick = e => {
+  const selBtn = e.target.closest('[data-select]');
+  const delBtn = e.target.closest('[data-delete]');
+  if (selBtn) {
+    selected = Number(selBtn.dataset.select);
+    $('customerSelect').value = selected;
+    document.querySelector('[data-tab="register"]').click();
+    renderCard();
+  }
+  if (delBtn) {
+    const id = Number(delBtn.dataset.delete);
+    const p = people.find(x => x.id === id);
+    if (p && confirm(`¿Seguro que querés eliminar a ${p.name}?`)) {
+      people = people.filter(x => x.id !== id);
+      if (selected === id) {
+        selected = people[0]?.id;
+      }
+      save();
+    }
+  }
+};
+
+$('search').oninput = render;
+$('customerSelect').onchange = renderCard;
+
+$('add').onclick = () => {
+  const name = $('newName').value.trim();
+  if (!name) return alert('Escribí un nombre');
+  const id = Math.max(0, ...people.map(p => p.id)) + 1;
+  people.push({ id, name, cuts: 0, rewards: 0 });
+  selected = id;
+  $('newName').value = '';
+  save();
+};
+
+function generateQR() {
+  const container = $('qrcode');
+  container.innerHTML = '';
+  new QRCode(container, {
+    text: window.location.href,
+    width: 200,
+    height: 200
+  });
+}
+
+render();
+</script>
+</body>
+</html>
